@@ -52,14 +52,14 @@ public class GestorHorarios {
         Aula aula = buscarAula(nombreAula);
         // Verifica cada hora antes de reservar
         for (int i = hora; i < hora + duracion; i++) {
-            if (!aula.consultarDisponibilidad(dia, hora)) {
-                throw new HorarioConflictivoException("Horario ocupado en aula: " + nombreAula);
+            if (!aula.consultarDisponibilidad(dia, i)) { // ← i no hora
+                throw new HorarioConflictivoException(
+                        "Horario ocupado en aula: " + nombreAula);
             }
-            // Si todas las horas están libres realiza la reserva
-            aula.reservar(dia, hora, duracion);
-
-            System.out.println("Horario reservado exitosamente.");
         }
+        // Si todas las horas están libres realiza la reserva
+        aula.reservar(dia, hora, duracion);
+        System.out.println("Horario reservado exitosamente.");
     }
 
     /**

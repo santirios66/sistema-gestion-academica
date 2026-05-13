@@ -1,4 +1,5 @@
 package model;
+
 /**
  * Clase que representa un aula en el sistema universitario.
  * Maneja su disponibilidad horaria con una matriz boolean[7][24]
@@ -23,8 +24,13 @@ public class Aula {
     }
 
     // Getters
-    public String getNombre() { return nombre; }
-    public int getCapacidad() { return capacidad; }
+    public String getNombre() {
+        return nombre;
+    }
+
+    public int getCapacidad() {
+        return capacidad;
+    }
 
     /**
      * Reserva un horario en el aula verificando disponibilidad.
@@ -33,18 +39,9 @@ public class Aula {
      * duracion: cantidad de horas a reservar
      */
     public void reservar(int dia, int hora, int duracion) {
-        // Primero verifica que todas las horas estén libres
-        for (int i = hora; i < hora + duracion; i++) {
-            if (disponibilidad[dia][i]) {
-                System.out.println("Error: hora " + i + " ya está reservada.");
-                return;
-            }
-        }
-        // Si están libres, las reserva
         for (int i = hora; i < hora + duracion; i++) {
             disponibilidad[dia][i] = true;
         }
-        System.out.println("Reserva exitosa en aula " + nombre);
     }
 
     /**
@@ -69,7 +66,7 @@ public class Aula {
      * Muestra el horario completo del aula en consola.
      */
     public void mostrarHorario() {
-        String[] dias = {"Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"};
+        String[] dias = { "Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab" };
         for (int i = 0; i < 7; i++) {
             System.out.print(dias[i] + ": ");
             for (int j = 0; j < 24; j++) {
