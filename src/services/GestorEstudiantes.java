@@ -1,5 +1,8 @@
 package services;
 
+import exceptions.EstudianteNoEncontradoException;
+import exceptions.EstudianteYaExisteException;
+import exceptions.PilaDeshacerVaciaException;
 import model.Estudiante;
 import model.Facultad;
 import model.Operacion;
@@ -56,8 +59,14 @@ public class GestorEstudiantes {
      * Guarda la operación en pilaDeshacer para poder deshacerla.
      *
      * @param estudiante objeto Estudiante a registrar
+     * @throws EstudianteYaExisteException si ya existe un estudiante con ese ID
      */
-    public void registrarEstudiante(Estudiante estudiante) {
+    public void registrarEstudiante(Estudiante estudiante) throws EstudianteYaExisteException {
+        if (estudiantes.containsKey(estudiante.getId())) {
+            throw new EstudianteYaExisteException(
+                "Ya existe un estudiante con ID: " + estudiante.getId()
+            );
+        }
         estudiantes.put(estudiante.getId(), estudiante);
         pilaDeshacer.push(new Operacion(
             "REGISTRAR_ESTUDIANTE",
@@ -74,12 +83,12 @@ public class GestorEstudiantes {
      *
      * @param id identificador único del estudiante
      * @return objeto Estudiante si existe
-     * @throws Exception si no existe un estudiante con ese ID
+     * @throws EstudianteNoEncontradoException si no existe un estudiante con ese ID
      */
-    public Estudiante buscarEstudiante(String id) throws Exception {
+    public Estudiante buscarEstudiante(String id) throws EstudianteNoEncontradoException {
         Estudiante estudiante = estudiantes.get(id);
         if (estudiante == null) {
-            throw new Exception("No existe estudiante con ID: " + id);
+            throw new EstudianteNoEncontradoException("No existe estudiante con ID: " + id);
         }
         return estudiante;
     }
@@ -90,9 +99,9 @@ public class GestorEstudiantes {
      * para poder restaurarlo si el usuario deshace la operación.
      *
      * @param id identificador del estudiante a eliminar
-     * @throws Exception si no existe un estudiante con ese ID
+     * @throws EstudianteNoEncontradoException si no existe un estudiante con ese ID
      */
-    public void eliminarEstudiante(String id) throws Exception {
+    public void eliminarEstudiante(String id) throws EstudianteNoEncontradoException {
         Estudiante estudiante = buscarEstudiante(id);
         estudiantes.remove(id);
         // Guarda el estudiante completo para restaurarlo si se deshace
@@ -125,11 +134,11 @@ public class GestorEstudiantes {
      * Saca la operación del tope de pilaDeshacer, restaura el estado anterior
      * y mueve esa operación a pilaRehacer por si el usuario quiere rehacerla.
      *
-     * @throws Exception si pilaDeshacer está vacía
+     * @throws PilaDeshacerVaciaException si pilaDeshacer está vacía
      */
-    public void deshacer() throws Exception {
+    public void deshacer() throws PilaDeshacerVaciaException {
         if (pilaDeshacer.isEmpty()) {
-            throw new Exception("No hay operaciones para deshacer.");
+            throw new PilaDeshacerVaciaException("No hay operaciones para deshacer.");
         }
         Operacion operacion = pilaDeshacer.pop();
         pilaRehacer.push(operacion);
@@ -147,11 +156,11 @@ public class GestorEstudiantes {
      * Rehace la última operación deshecha.
      * Saca la operación del tope de pilaRehacer y la vuelve a ejecutar.
      *
-     * @throws Exception si pilaRehacer está vacía
+     * @throws PilaDeshacerVaciaException si pilaRehacer está vacía
      */
-    public void rehacer() throws Exception {
+    public void rehacer() throws PilaDeshacerVaciaException {
         if (pilaRehacer.isEmpty()) {
-            throw new Exception("No hay operaciones para rehacer.");
+            throw new PilaDeshacerVaciaException("No hay operaciones para rehacer.");
         }
         Operacion operacion = pilaRehacer.pop();
         pilaDeshacer.push(operacion);
