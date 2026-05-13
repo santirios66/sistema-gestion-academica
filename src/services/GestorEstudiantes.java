@@ -125,7 +125,7 @@ public class GestorEstudiantes {
         }
         for (Estudiante e : estudiantes.values()) {
             System.out.println(e.mostrarInformacion());
-            System.out.println("--------------------");
+            System.out.println("---------------------");
         }
     }
 
