@@ -1,4 +1,6 @@
+package model;
 import java.util.LinkedList;
+ 
 
 /**
  * Esta clase que representa un estudiante en el sistema universitario.

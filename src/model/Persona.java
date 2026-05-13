@@ -1,3 +1,4 @@
+package model;
 /**
  * Clase abstracta que representa una persona en el sistema universitario.
  * No se puede instanciar directamente, sirve como base para Estudiante y Profesor.

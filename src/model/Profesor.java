@@ -1,3 +1,4 @@
+package model;
 
 /**
  * Clase que representa un profesor en el sistema universitario.
