@@ -1,8 +1,7 @@
 package services;
 
+import exceptions.EstudianteNoEncontradoException;
 import exceptions.PilaDeshacerVaciaException;
-import exceptions.SemestreInvalidoException;
-import exceptions.SinNotasException;
 import model.Estudiante;
 
 import java.util.Stack;
@@ -29,17 +28,13 @@ public class GestorReportes {
 
     /**
      * Genera el reporte académico completo de un estudiante.
-     * Lanza excepción si el estudiante no tiene ninguna nota registrada.
+     * Muestra las notas por semestre y el promedio de cada uno.
+     * Guarda el reporte en la pila de navegación.
      *
-     * @throws SinNotasException si el estudiante no tiene notas
+     * @param estudiante estudiante del que se genera el reporte
      */
-    public void generarReporte(Estudiante estudiante) throws SinNotasException {
-        // Verifica que tenga al menos una nota
-        if (estudiante.calcularPromedioAcumulado() == 0) {
-            throw new SinNotasException(
-                "El estudiante " + estudiante.getNombre() + " no tiene notas registradas.");
-        }
-
+    public void generarReporte(Estudiante estudiante) {
+        // Guarda en pila para poder navegar atrás
         pilaNavegacion.push(estudiante.getId());
 
         System.out.println("=== REPORTE ACADÉMICO ===");
@@ -51,12 +46,15 @@ public class GestorReportes {
 
         for (int i = 0; i < 10; i++) {
             boolean tieneNotas = false;
+
+            // Verifica si el semestre tiene al menos una nota
             for (int j = 0; j < 20; j++) {
                 if (notas[i][j] != null) {
                     tieneNotas = true;
                     break;
                 }
             }
+
             if (tieneNotas) {
                 System.out.println("Semestre " + (i + 1) + ":");
                 for (int j = 0; j < 20; j++) {
@@ -73,17 +71,12 @@ public class GestorReportes {
     }
 
     /**
-     * Genera reporte de materias reprobadas (nota menor a 3.0).
-     * Lanza excepción si el estudiante no tiene notas registradas.
+     * Genera un reporte de las materias reprobadas del estudiante.
+     * Una materia está reprobada si la nota es menor a 3.0.
      *
-     * @throws SinNotasException si el estudiante no tiene notas
+     * @param estudiante estudiante del que se generan las reprobadas
      */
-    public void reporteReprobadas(Estudiante estudiante) throws SinNotasException {
-        if (estudiante.calcularPromedioAcumulado() == 0) {
-            throw new SinNotasException(
-                "El estudiante " + estudiante.getNombre() + " no tiene notas registradas.");
-        }
-
+    public void reporteReprobadas(Estudiante estudiante) {
         System.out.println("=== MATERIAS REPROBADAS ===");
         System.out.println("Estudiante: " + estudiante.getNombre());
 
@@ -110,38 +103,29 @@ public class GestorReportes {
 
     /**
      * Calcula el promedio de un semestre específico.
-     * Lanza excepción si el semestre está fuera del rango 0-9.
      *
-     * @throws SemestreInvalidoException si el semestre es inválido
+     * @param estudiante estudiante a consultar
+     * @param semestre semestre a calcular (0 a 9)
      */
-    public double promedioSemestre(Estudiante estudiante, int semestre)
-            throws SemestreInvalidoException {
-        if (semestre < 0 || semestre > 9) {
-            throw new SemestreInvalidoException(
-                "El semestre debe estar entre 1 y 10.");
-        }
+    public double promedioSemestre(Estudiante estudiante, int semestre) {
         return estudiante.calcularPromedio(semestre);
     }
 
     /**
      * Calcula el promedio acumulado del estudiante.
-     * Lanza excepción si no tiene notas registradas.
      *
-     * @throws SinNotasException si el estudiante no tiene notas
+     * @param estudiante estudiante a consultar
      */
-    public double promedioAcumulado(Estudiante estudiante) throws SinNotasException {
-        if (estudiante.calcularPromedioAcumulado() == 0) {
-            throw new SinNotasException(
-                "El estudiante " + estudiante.getNombre() + " no tiene notas registradas.");
-        }
+    public double promedioAcumulado(Estudiante estudiante) {
         return estudiante.calcularPromedioAcumulado();
     }
 
     /**
      * Navega al reporte anterior usando la pila de navegación.
-     * Lanza excepción si no hay reportes anteriores.
+     * Saca el reporte actual y retorna el ID del anterior.
      *
-     * @throws PilaDeshacerVaciaException si la pila está vacía
+     * @return ID del estudiante del reporte anterior
+     * @throws PilaDeshacerVaciaException si no hay reportes anteriores
      */
     public String atras() throws PilaDeshacerVaciaException {
         if (pilaNavegacion.isEmpty()) {

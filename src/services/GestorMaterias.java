@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
-
 import exceptions.EstudianteNoEncontradoEnMateriaException;
 import exceptions.MateriaNoEncontradaException;
 import exceptions.MateriaYaExisteException;
@@ -38,7 +37,7 @@ public class GestorMaterias {
      * Antes de crearla verifica que no exista otra
      * con el mismo código.
      */
-    
+
     public void crearMateria(String codigo, String nombre, int cupos, int creditos) throws MateriaYaExisteException {
         if (materias.containsKey(codigo)) {
             throw new MateriaYaExisteException("Ya existe una materia con codigo: " + codigo);
@@ -114,7 +113,7 @@ public class GestorMaterias {
             throws MateriaNoEncontradaException,
             EstudianteNoEncontradoEnMateriaException {
 
-        Materia materia = buscarMateria(codigoMateria); 
+        Materia materia = buscarMateria(codigoMateria);
 
         Estudiante estudianteEncontrado = null;
 
@@ -200,9 +199,28 @@ public class GestorMaterias {
      * después usando la cola batch.
      */
     public void cargarBatch(String archivo) {
+        try {
+            // Lee el archivo línea por línea
+            java.io.BufferedReader br = new java.io.BufferedReader(
+                    new java.io.FileReader(archivo));
 
-        System.out.println(
-                "Cargando solicitudes desde: " + archivo);
+            String linea;
+            // Salta la primera línea que es el encabezado
+            br.readLine();
+
+            while ((linea = br.readLine()) != null) {
+                String[] partes = linea.split(",");
+                String idEstudiante = partes[0].trim();
+                String codigoMateria = partes[1].trim();
+                // Crea la solicitud y la mete a la cola
+                colaBatch.add(new SolicitudInscripcion(idEstudiante, codigoMateria));
+            }
+            br.close();
+            System.out.println("Se encolaron " + colaBatch.size() + " solicitudes.");
+
+        } catch (Exception e) {
+            System.out.println("Error leyendo archivo: " + e.getMessage());
+        }
     }
 
     /*
@@ -229,7 +247,5 @@ public class GestorMaterias {
                             + solicitud.getIdEstudiante());
         }
     }
-  
 
-    
 }
