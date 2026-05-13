@@ -3,8 +3,9 @@ package services;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.TreeMap;
 
+
+import exceptions.EstudianteNoEncontradoEnMateriaException;
 import exceptions.MateriaNoEncontradaException;
 import exceptions.MateriaYaExisteException;
 import exceptions.PreRequisitoNoAprobadoException;
@@ -16,22 +17,28 @@ import model.SolicitudInscripcion;
 
 public class GestorMaterias {
 
-    // Atributos
-    private HashMap<String, Materia> materias; // Hashmap para buscar materias por código
+    // Atributos principales del gestor
 
-    private Queue<SolicitudInscripcion> colaBatch; // Queue para procesar solicitudes de inscripción
+    // HashMap donde la clave es el código de la materia.
+    // Permite buscar materias rápidamente usando el código.
+    private HashMap<String, Materia> materias;
 
-    // Construtor que inicializa las estructuras vacias
-    public GestorMaterias(TreeMap<String, Materia> materias, Queue<SolicitudInscripcion> colaBatch) {
+    // Cola FIFO que guarda solicitudes de inscripción
+    // para procesarlas después en lote (batch).
+    private Queue<SolicitudInscripcion> colaBatch;
+
+    // Constructor que inicializa las estructuras vacias
+    public GestorMaterias() {
         this.materias = new HashMap<>();
         this.colaBatch = new LinkedList<>();
     }
 
     /*
-     * crea una materia
-     * si ya existe lanza una excepcion
+     * Crea una nueva materia en el sistema.
+     * Antes de crearla verifica que no exista otra
+     * con el mismo código.
      */
-
+    
     public void crearMateria(String codigo, String nombre, int cupos, int creditos) throws MateriaYaExisteException {
         if (materias.containsKey(codigo)) {
             throw new MateriaYaExisteException("Ya existe una materia con codigo: " + codigo);
@@ -44,47 +51,185 @@ public class GestorMaterias {
     }
 
     /*
-     * busca la materia por codigo , si no la encuentra lanza una excepcion.
-     * si la encuentra la retorna
-     * 
-     * 
+     * Busca una materia usando su código.
+     * Si no existe se lanza una excepción.
+     * si existe la retorna.
      */
     public Materia buscarMateria(String codigo) throws MateriaNoEncontradaException {
-        Materia materia = materias.get(codigo);
+        Materia materia = materias.get(codigo); // Busca la materia usando el código
         if (materia == null) {
             throw new MateriaNoEncontradaException("No existe materia con codigo: " + codigo);
         }
         return materia;
     }
 
-    // Inscribe un estudiante a una materia:
-    // 1. Verifica que la materia exista.
-    // 2. Verifica prerequisitos → lanza PreRequisitoNoAprobadoException si no los cumple.
-    // 3. Si hay cupo → inscribe directamente.
-    //    Si no hay cupo → agrega a la cola de espera.
-
+    /*
+     * Inscribe un estudiante en una materia.
+     * Primero revisa que cumpla prerequisitos.
+     * Si la materia tiene cupos se inscribe normal.
+     * Si está llena se agrega a cola de espera.
+     */
     public void inscribirEstudiante(Estudiante estudiante, String codigoMateria)
             throws MateriaNoEncontradaException, PreRequisitoNoAprobadoException {
         Materia materia = buscarMateria(codigoMateria); // lanza MateriaNoEncontradaException si no existe
 
         // Verificar prerequisitos antes de inscribir
-        if (!materia.verificarPrerequisitos(estudiante)) {
+        if (!materia.verificarPrerequisitos(estudiante)) { // Si no cumple prerequisitos no puede inscribirse
             throw new PreRequisitoNoAprobadoException(
-                "El estudiante " + estudiante.getNombre() +
-                " no cumple los prerequisitos de la materia " + codigoMateria);
+                    "El estudiante " + estudiante.getNombre() +
+                            " no cumple los prerequisitos de la materia " + codigoMateria);
         }
 
         // inscribir() maneja internamente:
-        // - Si hay cupo → agrega a estudiantesInscritos y sube cuposActuales
-        // - Si no hay cupo → agrega a colaEspera
-        materia.inscribir(estudiante);
+        // Si hay cupo = agrega a estudiantesInscritos y sube cuposActuales
+        // Si no hay cupo = agrega a colaEspera
 
-        if (materia.estaLlena()) {
-            System.out.println("Sin cupo. " + estudiante.getNombre() +
-                " fue agregado a la cola de espera de " + codigoMateria);
-        } else {
-            System.out.println("Estudiante inscrito exitosamente en " + codigoMateria);
+        if (!materia.estaLlena()) { // Si todavía hay cupos disponibles se inscribe
+
+            materia.inscribir(estudiante);
+
+            System.out.println(
+                    "Estudiante inscrito exitosamente.");
+
+        } else { // Si la materia está llena entra a cola de espera
+
+            materia.getColaEspera().add(estudiante);
+
+            System.out.println(
+                    "Sin cupos. Agregado a cola de espera.");
         }
     }
 
+    /*
+     * Cancela la inscripción de un estudiante.
+     * Busca el estudiante dentro de la lista de inscritos.
+     * Si no aparece se lanza una excepción.
+     * Al cancelar se libera el cupo automáticamente.
+     */
+
+    public void cancelarInscripcion(
+            String idEstudiante,
+            String codigoMateria)
+
+            throws MateriaNoEncontradaException,
+            EstudianteNoEncontradoEnMateriaException {
+
+        Materia materia = buscarMateria(codigoMateria); 
+
+        Estudiante estudianteEncontrado = null;
+
+        // Buscar estudiante en la lista
+        for (Estudiante e : materia.getEstudiantesInscritos()) {
+
+            if (e.getId().equals(idEstudiante)) {
+
+                estudianteEncontrado = e;
+                break;
+            }
+        }
+
+        // Si no existe en la materia
+        if (estudianteEncontrado == null) {
+
+            throw new EstudianteNoEncontradoEnMateriaException(
+                    "El estudiante "
+                            + idEstudiante
+                            + " no está inscrito en la materia.");
+        }
+
+        // Cancelar inscripción
+        materia.cancelarInscripcion(estudianteEncontrado);
+
+        System.out.println("Inscripción cancelada exitosamente.");
+    }
+
+    // Mustra todas las materias registradas.
+    public void mostrarMaterias() {
+
+        if (materias.isEmpty()) {
+
+            System.out.println(
+                    "No hay materias registradas.");
+
+            return;
+        }
+
+        for (Materia materia : materias.values()) {
+
+            System.out.println(
+                    materia.toString());
+
+            System.out.println(
+                    "----------------------");
+        }
+    }
+
+    /*
+     * Muestra todos los estudiantes que están
+     * esperando un cupo en una materia.
+     */
+    public void mostrarColaEspera(
+            String codigoMateria)
+
+            throws MateriaNoEncontradaException {
+
+        Materia materia = buscarMateria(codigoMateria);
+
+        if (materia.getColaEspera().isEmpty()) {
+
+            System.out.println(
+                    "No hay estudiantes en cola.");
+
+            return;
+        }
+
+        System.out.println(
+                "Cola de espera:");
+
+        for (Estudiante e : materia.getColaEspera()) {
+
+            System.out.println(
+                    e.getNombre());
+        }
+
+    }
+
+    /*
+     * Simula la carga de solicitudes desde un archivo.
+     * Las solicitudes quedan listas para procesarse
+     * después usando la cola batch.
+     */
+    public void cargarBatch(String archivo) {
+
+        System.out.println(
+                "Cargando solicitudes desde: " + archivo);
+    }
+
+    /*
+     * Procesa todas las solicitudes almacenadas
+     * en la cola batch usando el principio FIFO:
+     * el primero en entrar es el primero en salir.
+     */
+    public void procesarBatch() {
+
+        if (colaBatch.isEmpty()) {
+
+            System.out.println(
+                    "No hay solicitudes pendientes. ");
+
+            return;
+        }
+
+        while (!colaBatch.isEmpty()) {
+
+            SolicitudInscripcion solicitud = colaBatch.poll();
+
+            System.out.println(
+                    "Procesando solicitud de : "
+                            + solicitud.getIdEstudiante());
+        }
+    }
+  
+
+    
 }
